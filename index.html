@@ -1,149 +1,279 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#101827">
-  <title>Smart Home Monitor</title>
+  <meta name="theme-color" content="#0b1020">
+  <title>Smart Home Monitor | ESP32-S3</title>
   <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
 </head>
 <body>
-  <main class="app">
-    <header class="topbar">
+  <!-- Full-page visual alert -->
+  <div id="alertOverlay" class="alert-overlay" aria-hidden="true">
+    <div class="alert-banner" role="alert">
+      <span class="alert-pulse"></span>
       <div>
-        <p class="eyebrow">ESP32-S3 · IOT MONITORING</p>
-        <h1>Smart Home Monitor</h1>
-        <p class="subtitle">Your home, at a glance.</p>
+        <strong id="alertTitle">SAFETY ALERT</strong>
+        <p id="alertMessage">Check your environment immediately.</p>
       </div>
-      <div id="connection" class="connection disconnected">
+    </div>
+  </div>
+
+  <main class="dashboard">
+    <header class="topbar">
+      <div class="brand-mark">⌂</div>
+
+      <div class="brand-copy">
+        <p class="eyebrow">ESP32-S3 · IOT MONITORING</p>
+        <h1>Smart Home <span>Monitor</span></h1>
+        <p class="subheading">Your home, at a glance.</p>
+      </div>
+
+      <div id="connectionPill" class="connection-pill disconnected">
         <span class="status-dot"></span>
         <span id="connectionText">Connecting...</span>
       </div>
     </header>
 
-    <section class="section">
-      <div class="section-heading">
-        <div>
-          <h2>Environment</h2>
-          <p>Live sensor readings</p>
+    <section class="welcome-grid">
+      <article class="panel welcome-panel">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">SYSTEM OVERVIEW</p>
+            <h2>Welcome home</h2>
+          </div>
+          <span class="live-chip">
+            <span class="live-dot"></span> LIVE
+          </span>
         </div>
-        <button id="refreshButton" class="refresh-button">↻ Refresh</button>
-      </div>
 
-      <div class="sensor-grid">
-        <article class="card metric-card">
-          <div class="card-top">
-            <span class="metric-icon">🌡️</span>
-            <span class="muted">TEMPERATURE</span>
+        <p class="welcome-copy">
+          Monitor your environment and safety sensors in real time.
+        </p>
+
+        <div class="overview-stats">
+          <div>
+            <span class="stat-icon">🌡</span>
+            <span class="stat-label">Temperature</span>
+            <strong id="welcomeTemp">-- °C</strong>
           </div>
-          <p id="temperature" class="metric-value">--<small> °C</small></p>
-          <p class="card-note">DHT11 sensor</p>
-        </article>
-
-        <article class="card metric-card">
-          <div class="card-top">
-            <span class="metric-icon">💧</span>
-            <span class="muted">HUMIDITY</span>
+          <div>
+            <span class="stat-icon">💧</span>
+            <span class="stat-label">Humidity</span>
+            <strong id="welcomeHumidity">-- %</strong>
           </div>
-          <p id="humidity" class="metric-value">--<small> %</small></p>
-          <p class="card-note">Relative humidity</p>
-        </article>
-
-        <article class="card metric-card">
-          <div class="card-top">
-            <span class="metric-icon">☀️</span>
-            <span class="muted">LIGHT LEVEL</span>
+          <div>
+            <span class="stat-icon">☀</span>
+            <span class="stat-label">Light level</span>
+            <strong id="welcomeLight">--</strong>
           </div>
-          <p id="lightADC" class="metric-value">--</p>
-          <p id="lightDescription" class="card-note">LDR ADC reading</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="section">
-      <div class="section-heading">
-        <div>
-          <h2>Safety monitoring</h2>
-          <p>Flame and vibration sensors</p>
         </div>
-      </div>
+      </article>
 
-      <div class="safety-grid">
-        <article id="flameCard" class="card status-card">
-          <div class="status-icon">🔥</div>
-          <div class="status-content">
-            <h3>Flame detection</h3>
-            <p id="flameStatus" class="state-text">Waiting for data</p>
+      <article class="panel quote-panel">
+        <p class="eyebrow">HOME STATUS</p>
+        <h2 id="homeStatusTitle">Connecting to ESP32</h2>
+        <p id="homeStatusCopy">Waiting for sensor readings.</p>
+
+        <div class="status-summary">
+          <span id="summaryIcon" class="summary-icon">✓</span>
+          <div>
+            <strong id="summaryTitle">System initializing</strong>
+            <small id="lastUpdated">Waiting for first reading...</small>
           </div>
-          <span id="flameBadge" class="badge">--</span>
-        </article>
-
-        <article id="vibrationCard" class="card status-card">
-          <div class="status-icon">〰️</div>
-          <div class="status-content">
-            <h3>Vibration detection</h3>
-            <p id="vibrationStatus" class="state-text">Waiting for data</p>
-          </div>
-          <span id="vibrationBadge" class="badge">--</span>
-        </article>
-      </div>
-
-      <article id="overallSafety" class="overall-safety">
-        <span id="safetyIcon">◉</span>
-        <div>
-          <strong id="safetyTitle">Waiting for sensor data</strong>
-          <p id="safetyDescription">Connect to the ESP32 to see safety status.</p>
         </div>
       </article>
     </section>
 
-    <section class="section">
+    <section class="section-block">
       <div class="section-heading">
         <div>
-          <h2>Automation status</h2>
-          <p>Current output states</p>
+          <p class="eyebrow">REAL-TIME TELEMETRY</p>
+          <h2>Environment</h2>
+          <p class="section-description">Live sensor readings</p>
         </div>
+        <button class="button" id="refreshButton" type="button">
+          ↻ Refresh
+        </button>
       </div>
 
-      <div class="automation-grid">
-        <article class="card automation-card">
-          <span class="automation-icon green">💡</span>
-          <div>
-            <h3>Room light</h3>
-            <p>Automatic LDR control</p>
+      <div class="metric-grid">
+        <article class="metric-card">
+          <div class="metric-top">
+            <span class="metric-icon">🌡</span>
+            <span class="eyebrow">TEMPERATURE</span>
           </div>
-          <span id="roomLightState" class="badge">--</span>
+          <strong class="metric-value" id="temperature">-- °C</strong>
+          <p id="temperatureHint">DHT11 sensor</p>
         </article>
 
-        <article class="card automation-card">
-          <span class="automation-icon yellow">❄️</span>
-          <div>
-            <h3>AC indicator</h3>
-            <p>Simulated temperature control</p>
+        <article class="metric-card">
+          <div class="metric-top">
+            <span class="metric-icon">💧</span>
+            <span class="eyebrow">HUMIDITY</span>
           </div>
-          <span id="acState" class="badge">--</span>
+          <strong class="metric-value" id="humidity">-- %</strong>
+          <p id="humidityHint">Relative humidity</p>
         </article>
 
-        <article class="card automation-card">
-          <span class="automation-icon red">🚨</span>
-          <div>
-            <h3>Alert LED</h3>
-            <p>Flame or vibration alert</p>
+        <article class="metric-card">
+          <div class="metric-top">
+            <span class="metric-icon">☀</span>
+            <span class="eyebrow">LIGHT LEVEL</span>
           </div>
-          <span id="redLedState" class="badge">--</span>
+          <strong class="metric-value" id="lightADC">--</strong>
+          <p id="lightHint">LDR ADC reading</p>
         </article>
       </div>
     </section>
 
-    <footer class="footer">
-      <span id="lastUpdated">Waiting for first update...</span>
-      <span>Local ESP32 connection</span>
+    <section class="section-block">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">PROTECTION LAYER</p>
+          <h2>Safety monitoring</h2>
+          <p class="section-description">
+            Active alerts from enabled safety sensors.
+          </p>
+        </div>
+      </div>
+
+      <div class="safety-grid">
+        <article class="safety-card" id="flameCard">
+          <div class="safety-symbol flame-symbol">♨</div>
+          <div class="safety-content">
+            <h3>Flame detection</h3>
+            <p id="flameText">Waiting for data</p>
+          </div>
+          <span id="flameBadge" class="state-badge">--</span>
+        </article>
+
+        <article class="safety-card" id="vibrationCard">
+          <div class="safety-symbol vibration-symbol">〰</div>
+          <div class="safety-content">
+            <h3>Vibration detection</h3>
+            <p id="vibrationText">Waiting for data</p>
+          </div>
+          <span id="vibrationBadge" class="state-badge">--</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="section-block">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">DEVICE MANAGEMENT</p>
+          <h2>Sensor controls</h2>
+          <p class="section-description">
+            Enable or disable each sensor independently.
+          </p>
+        </div>
+        <span class="local-note">Settings reset to ON after reboot</span>
+      </div>
+
+      <div class="control-grid">
+        <article class="control-card">
+          <div class="control-card-head">
+            <span class="control-icon">🌡</span>
+            <label class="switch">
+              <input id="dhtSwitch" type="checkbox" checked>
+              <span class="slider"></span>
+              <span class="sr-only">Enable DHT11 monitoring</span>
+            </label>
+          </div>
+          <h3>DHT11 Sensor</h3>
+          <p>Temperature and humidity</p>
+          <span id="dhtState" class="control-state">Waiting...</span>
+        </article>
+
+        <article class="control-card">
+          <div class="control-card-head">
+            <span class="control-icon">☀</span>
+            <label class="switch">
+              <input id="ldrSwitch" type="checkbox" checked>
+              <span class="slider"></span>
+              <span class="sr-only">Enable LDR monitoring</span>
+            </label>
+          </div>
+          <h3>LDR Sensor</h3>
+          <p>Ambient light monitoring</p>
+          <span id="ldrState" class="control-state">Waiting...</span>
+        </article>
+
+        <article class="control-card">
+          <div class="control-card-head">
+            <span class="control-icon">♨</span>
+            <label class="switch">
+              <input id="flameSwitch" type="checkbox" checked>
+              <span class="slider"></span>
+              <span class="sr-only">Enable flame monitoring</span>
+            </label>
+          </div>
+          <h3>Flame Sensor</h3>
+          <p>Flame detection</p>
+          <span id="flameState" class="control-state">Waiting...</span>
+        </article>
+
+        <article class="control-card">
+          <div class="control-card-head">
+            <span class="control-icon">〰</span>
+            <label class="switch">
+              <input id="vibrationSwitch" type="checkbox" checked>
+              <span class="slider"></span>
+              <span class="sr-only">Enable vibration monitoring</span>
+            </label>
+          </div>
+          <h3>Vibration Sensor</h3>
+          <p>Vibration detection</p>
+          <span id="vibrationState" class="control-state">Waiting...</span>
+        </article>
+      </div>
+
+      <p id="controlFeedback" class="control-feedback" role="status">
+        Waiting for ESP32 connection.
+      </p>
+    </section>
+
+    <section class="section-block">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">AUTOMATION OUTPUTS</p>
+          <h2>Indicator status</h2>
+        </div>
+      </div>
+
+      <div class="output-grid">
+        <article class="output-card">
+          <span class="output-icon green">☀</span>
+          <div>
+            <h3>Room-light indicator</h3>
+            <p id="roomLightStatus">--</p>
+          </div>
+        </article>
+
+        <article class="output-card">
+          <span class="output-icon yellow">❄</span>
+          <div>
+            <h3>AC temperature indicator</h3>
+            <p id="acStatus">--</p>
+          </div>
+        </article>
+
+        <article class="output-card">
+          <span class="output-icon red">●</span>
+          <div>
+            <h3>Safety LED</h3>
+            <p id="redLedStatus">--</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <footer>
+      <span>SMART HOME MONITOR</span>
+      <span>Local network dashboard · ESP32-S3</span>
     </footer>
-
-    <div id="errorMessage" class="error-message" role="status" hidden></div>
   </main>
-
-  <script src="app.js"></script>
 </body>
 </html>
